@@ -1,0 +1,155 @@
+@RestResource(urlMapping='/IndecommRest/*')
+global without sharing class IndecommRestService
+{
+    @HttpPost
+    global static void doPost()
+    {
+        RestRequest req = RestContext.request;
+        RestResponse res = RestContext.response;
+        String reqst = req.requestBody.toString();
+        List<RestParser> requestData = RestParser.parse(reqst);
+        
+        
+        /*Get Emails and Phone Number from the Request String
+* */
+        Set<String> emailSet = new Set<String>();
+        Set<String> phoneSet = new Set<String>();
+        Set<String> pidSet = new Set<String>();
+        for(RestParser rp :requestData ){
+            pidSet.add(rp.pid);
+            if(rp.email!=null){
+                emailSet.add(rp.email);
+            }
+            else if(rp.email == null && rp.Phone!=null){
+                phoneSet.add(rp.phone);
+            }
+        }
+        /* 1.Query all Contacts matching the input string email and phone
+* 2.Query all Account which have opportunities with matching Pids
+*/
+        List<Contact> conList = [select Id,Phone,Email,AccountId from Contact where Phone IN:phoneSet OR Email IN:emailSet];
+        List<Account> accList = [select Id,(select Id,Pid__c,CreatedById from Opportunities) from Account where Id IN (select AccountId from Opportunity where Pid__c IN:pidSet)];
+        //List<Contact> conList = [select Id,Phone,Email,AccountId from Contact];
+        
+        //List<Account> accList = [select Id,(select Id,Pid__c from Opportunities) from Account];
+        
+        /*Create a Map
+*/
+        Map<String,Contact> emailContactMap = new Map<String,Contact>();
+        Map<String,Contact> phoneContactMap = new Map<String,Contact>();
+        // Map<String,Set<String>> accountMatchingPidsMap = new Map<String,Set<String>>();
+        Map<String,Set<Opportunity>> accountOpportunityMap = new Map<String,Set<Opportunity>>();
+        for(Contact con :conList){
+            emailContactMap.Put(con.Email,con);
+            phoneContactMap.put(con.Phone,con);
+        }
+        System.debug('=emailContactMap='+emailContactMap);
+        System.debug('=phoneContactMap='+phoneContactMap);
+        for(Account acc : accList){
+            
+            if(acc.Opportunities.size()>0){
+                //Set<String> pids = new Set<String>();
+                Set<Opportunity> opts = new Set<Opportunity>();
+                for(Opportunity op : acc.Opportunities){
+                    opts.add(op);
+                    
+                }
+                accountOpportunityMap.put(acc.Id,opts);
+            }
+            
+        }
+        System.debug('=accountOpportunityMap='+accountOpportunityMap);
+        //List<Contact> matchingContacts = new List<Contact>();
+        List<Account> newAccList = new List<Account>();
+        List<Opportunity> updateOpprtunitiesList = new List<Opportunity>();
+        List<Opportunity> createOpprtunitiesList = new List<Opportunity>();
+       
+        for(RestParser rparser :requestData ){
+            if(rparser.email!=null && emailContactMap.containsKey(rparser.email)){
+                System.debug('=email='+rparser.email);
+                //matchingContacts.add(emailContactMap.get(rparser.email)); 
+                Contact c = emailContactMap.get(rparser.email);
+                Set<Opportunity> associatedOpts = accountOpportunityMap.get(c.AccountId);
+                System.debug('=associatedOpts1='+associatedOpts);
+                Boolean matchingPid=false;
+                if(associatedOpts!=null){
+                    for(Opportunity opty :associatedOpts){
+                        if((rparser.pid == opty.Pid__c) && (UserInfo.getUserId() == opty.createdById)) {
+                            updateOpprtunitiesList.add(opty);
+                            matchingPid = true;
+                        }
+                        
+                    }
+                }
+                if(matchingPid == false){
+                    Opportunity opp = new Opportunity();
+                    opp.AccountId = c.AccountId;
+                    opp.Name=rparser.fname;
+                    opp.Pid__c = rparser.pid;
+                    opp.CloseDate = System.today();
+                    opp.StageName = 'Prospecting';
+                    createOpprtunitiesList.add(opp);
+                }
+                
+                
+            }
+            else if(rparser.email == null && rparser.Phone != null && phoneContactMap.containsKey(rparser.Phone)){
+                //matchingContacts.add(phoneContactMap.get(rparser.Phone));
+                System.debug('=phone='+rparser.Phone);
+                Contact c = phoneContactMap.get(rparser.Phone);
+                System.debug('=c='+c);
+                System.debug('=accountOpportunityMap='+accountOpportunityMap);
+                Set<Opportunity> associatedOpts = accountOpportunityMap.get(c.AccountId);
+                System.debug('=associatedOpts2='+associatedOpts);
+                Boolean matchingPid=false;
+                if(associatedOpts!=null){
+                    for(Opportunity opty :associatedOpts){
+                        if((rparser.pid == opty.Pid__c) && (UserInfo.getUserId() == opty.createdById)) {
+                            updateOpprtunitiesList.add(opty);
+                            matchingPid = true;
+                        }
+                        
+                    }
+                }
+                System.debug('=matchingPid='+matchingPid);
+                if(matchingPid == false && rparser.pid!=null){
+                    Opportunity opp = new Opportunity();
+                    opp.AccountId = c.AccountId;
+                    opp.Name=rparser.fname;
+                    opp.Pid__c = rparser.pid;
+                    opp.CloseDate = System.today();
+                    opp.StageName = 'Prospecting';
+                    createOpprtunitiesList.add(opp);
+                }
+                
+            }
+           
+            
+        }
+        
+        Set<Opportunity> oppSet = new Set<Opportunity>();
+        oppSet.addAll(updateOpprtunitiesList);
+        List<Opportunity> finalOpList = new List<Opportunity>();
+        finalOpList.addAll(oppSet);
+        //Update the Matching Opportunities
+        if(finalOpList.size()>0){
+            try{
+                update finalOpList;
+            }
+            catch(Exception ex){
+                System.debug('=Exception='+ex);
+            }
+        }
+        //Create the New Opportunities
+        if(createOpprtunitiesList.size()>0){
+            try{
+                insert createOpprtunitiesList;
+            }
+            catch(Exception ex){
+                System.debug('=Exception='+ex);
+            }
+        }
+
+    }
+    
+}
