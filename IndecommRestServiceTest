@@ -1,0 +1,162 @@
+@isTest
+public  class IndecommRestServiceTest {
+    static testMethod void IndecommRestServiceNoMatches() {
+        RestRequest request = new RestRequest();
+        request.requestUri = System.URL.getSalesforceBaseUrl().toExternalForm() + '/services/apexrest/IndecommRest';
+        request.httpMethod = 'POST';
+        RestContext.request = new System.RestRequest();
+        RestContext.response = new System.RestResponse();
+        Map<String, String> headers = RestContext.request.headers;
+        headers.put('Content-Type', 'application/json');
+        String JSONMsg = '[{"pid":"1", "email":"joe@roofstock.com", "phone":"510-366-2251","fname":"joe","lname":"bryant"}]';
+        RestContext.request.requestBody = Blob.valueOf(JSONMsg);
+        Test.startTest();
+        IndecommRestService.doPost();
+        Test.stopTest();
+        
+    }
+    static testMethod void IndecommRestServiceMatchesEmail() {
+        RestRequest request = new RestRequest();
+        request.requestUri = System.URL.getSalesforceBaseUrl().toExternalForm() + '/services/apexrest/IndecommRest';
+        request.httpMethod = 'POST';
+        RestContext.request = new System.RestRequest();
+        RestContext.response = new System.RestResponse();
+        Map<String, String> headers = RestContext.request.headers;
+        headers.put('Content-Type', 'application/json');
+        String JSONMsg = '[{"pid":"1", "email":"joe@roofstock.com", "phone":"510-366-2251","fname":"joe","lname":"bryant"}]';
+        RestContext.request.requestBody = Blob.valueOf(JSONMsg);
+        
+        Account ac = new Account();
+        ac.Name='Test Account';
+        insert ac;
+        
+        Opportunity opp = new Opportunity();
+        opp.AccountId = ac.Id;
+        opp.Name=ac.Name;
+        opp.CloseDate = System.today();
+        opp.StageName = 'Prospecting';
+        opp.Pid__c = '1';
+        insert opp;
+        
+        Contact ct = new Contact();
+        ct.LastName = 'bryant1';
+        ct.FirstName = 'joe';
+        ct.AccountId = ac.Id;
+        ct.Email = 'joe@roofstock.com';
+        ct.Phone = '510-366-2251';
+        insert ct;
+        
+        Test.startTest();
+        IndecommRestService.doPost();
+        Test.stopTest();
+        
+    }
+    static testMethod void IndecommRestServiceMatchesPhone() {
+        RestRequest request = new RestRequest();
+        request.requestUri = System.URL.getSalesforceBaseUrl().toExternalForm() + '/services/apexrest/IndecommRest';
+        request.httpMethod = 'POST';
+        RestContext.request = new System.RestRequest();
+        RestContext.response = new System.RestResponse();
+        Map<String, String> headers = RestContext.request.headers;
+        headers.put('Content-Type', 'application/json');
+        String JSONMsg = '[{"pid":"1", "email":null, "phone":"510-366-2251","fname":"joe","lname":"bryant"}]';
+        RestContext.request.requestBody = Blob.valueOf(JSONMsg);
+        
+        Account ac = new Account();
+        ac.Name='Test Account';
+        insert ac;
+        
+        Opportunity opp = new Opportunity();
+        opp.AccountId = ac.Id;
+        opp.Name=ac.Name;
+        opp.CloseDate = System.today();
+        opp.StageName = 'Prospecting';
+        opp.Pid__c = '1';
+        insert opp;
+        
+        Contact ct = new Contact();
+        ct.LastName = 'bryant1';
+        ct.FirstName = 'joe';
+        ct.AccountId = ac.Id;
+        ct.Email = 'joe@roofstock.com';
+        ct.Phone = '510-366-2251';
+        insert ct;
+        
+        Test.startTest();
+        IndecommRestService.doPost();
+        Test.stopTest();
+        
+    }
+    static testMethod void IndecommRestServiceNoMatchingOpportunity() {
+        RestRequest request = new RestRequest();
+        request.requestUri = System.URL.getSalesforceBaseUrl().toExternalForm() + '/services/apexrest/IndecommRest';
+        request.httpMethod = 'POST';
+        RestContext.request = new System.RestRequest();
+        RestContext.response = new System.RestResponse();
+        Map<String, String> headers = RestContext.request.headers;
+        headers.put('Content-Type', 'application/json');
+        String JSONMsg = '[{"pid":"1", "email":"joe@roofstock.com", "phone":"510-366-2251","fname":"joe","lname":"bryant"}]';
+        RestContext.request.requestBody = Blob.valueOf(JSONMsg);
+        
+        Account ac = new Account();
+        ac.Name='Test Account2';
+        insert ac;
+        
+        Opportunity opp = new Opportunity();
+        opp.AccountId = ac.Id;
+        opp.Name=ac.Name;
+        opp.CloseDate = System.today();
+        opp.StageName = 'Prospecting';
+        opp.Pid__c = '2';
+        insert opp;
+        
+        Contact ct = new Contact();
+        ct.LastName = 'bryant1';
+        ct.FirstName = 'joe';
+        ct.AccountId = ac.Id;
+        ct.Email = 'joe@roofstock.com';
+        ct.Phone = '510-366-2251';
+        insert ct;
+        
+        Test.startTest();
+        IndecommRestService.doPost();
+        Test.stopTest();
+        
+    }
+    static testMethod void IndecommRestServiceNoMatchingOpportunityEmptyEmail() {
+        RestRequest request = new RestRequest();
+        request.requestUri = System.URL.getSalesforceBaseUrl().toExternalForm() + '/services/apexrest/IndecommRest';
+        request.httpMethod = 'POST';
+        RestContext.request = new System.RestRequest();
+        RestContext.response = new System.RestResponse();
+        Map<String, String> headers = RestContext.request.headers;
+        headers.put('Content-Type', 'application/json');
+        String JSONMsg = '[{"pid":"1", "email":null, "phone":"510-366-2251","fname":"joe","lname":"bryant"}]';
+        RestContext.request.requestBody = Blob.valueOf(JSONMsg);
+        
+        Account ac = new Account();
+        ac.Name='Test Account2';
+        insert ac;
+        
+        Opportunity opp = new Opportunity();
+        opp.AccountId = ac.Id;
+        opp.Name=ac.Name;
+        opp.CloseDate = System.today();
+        opp.StageName = 'Prospecting';
+        opp.Pid__c = '2';
+        insert opp;
+        
+        Contact ct = new Contact();
+        ct.LastName = 'bryant1';
+        ct.FirstName = 'joe';
+        ct.AccountId = ac.Id;
+        ct.Email = 'joe@roofstock.com';
+        ct.Phone = '510-366-2251';
+        insert ct;
+        
+        Test.startTest();
+        IndecommRestService.doPost();
+        Test.stopTest();
+        
+    }
+}
